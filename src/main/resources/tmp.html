@@ -1,0 +1,146 @@
+<div class="modal-wrapper" xmlns:th="http://www.thymeleaf.org">
+    <div class="modal-header">
+        <h3 id="myModalLabel" th:text="${type eq 'quote' ? 'Send quote' : 'Send invoice'}">Send quote</h3>
+    </div>
+    <form class="form-horizontal fileupload" id="quoteemailsendingform" th:object="${email}" th:action="@{'/booking/show/' + ${booking_code}+'/quoteemail/send/' + ${type}}" method="post" th:attr="data-url=@{'/booking/show/' + ${booking_code}+'/email/upload'}">
+    	<input type="hidden" id="isFileExist" th:value="${isFileExist}" />
+    	<input type="hidden" id="filenotfoundmsg" th:value="${filenotfoundmsg}" />
+        <div class="modal-body row">
+            <div class="span11" th:if="${isFileExist}">
+                <div class="control-group">
+                    <label for="emialtemplate" class="control-label">Template:</label>
+                    <div class="controls">
+                        <select id="emailtemplate" class="input-large" th:attr="data-remote=@{'/booking/show/' + ${booking_code}+'/quoteemail/template'}">
+                            <option value="">Custom</option>
+                            <option th:if="${templates ne null}" th:each="template, stat : ${templates}" th:value="${template.value}" th:text="${template.key}" value="template1">Template 1</option>
+                            <option value="template2" th:remove="all">Template 2</option>
+                            <option value="template3" th:remove="all">Template 3</option>
+                            <option value="template4" th:remove="all">Template 4</option>
+                        </select>
+                        <button id="viewquotebtn" class="btn btn-primary" th:text="${type eq 'quote' ? 'View quote' : 'View invoice'}">View quote</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="toemail" class="control-label">To:</label>
+                    <div class="controls">
+                        <input type="text" class="input-xxlarge" th:field="*{to}" data-required="required"/>
+                    </div>
+                </div>
+                <div class="control-group emailuploaderccbutton">
+                    <label for="cc" class="control-label">CC:</label>
+                    <div class="controls">
+                        <input type="text" class="input-xxlarge" th:field="*{cc}"/>
+                    </div>
+                </div>    
+                <div class="control-group emailuploaderbccbutton">
+                    <label for="bcc" class="control-label">BCC:</label>
+                    <div class="controls">
+                        <input type="text" class="input-xxlarge" th:field="*{bcc}"/>
+                    </div>
+                </div>    
+                <div class="control-group">
+                    <label for="emailsubject" class="control-label">Subject:</label>
+                    <div class="controls">
+                        <input type="text" class="input-xxlarge" th:field="*{subject}" data-required="required"/>
+                    </div>
+                </div>
+                <div class="control-group" id="quotediv">
+                    <label for="emailsubject" class="control-label" th:text="${type eq 'quote' ? 'Quote attachment:' : 'Invoice attachment:'}">Quote attachment:</label>
+                    <div class="controls">
+                        <a target="_blank" id="preparedquote" th:href="@{${path}}" th:text="${ref}" th:attr="data-path=${path}"></a>    <a id="removeattachedquote"><i class="icon icon-remove"></i></a>
+                    </div>
+                </div>
+                <div class="control-group">
+					<div class="controls">
+						<div class="fileupload-buttonbar">
+							<div class="">
+								<span class="btn btn-success fileinput-button">
+									<i class="icon-plus icon-white"></i>
+									<span>Upload files...</span>
+									<input type="file" name="qqfile" multiple=""/>
+								</span>
+								<span class="fileupload-loading"></span>
+							</div>
+						</div>
+					    <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+					</div>
+				</div>
+                <div class="control-group">
+                    <label class="control-label"></label>
+                    <div class="controls">
+                        <textarea class="rte" th:field="*{body}"></textarea>
+                    </div>
+                </div>           
+            </div>
+        </div>
+        <div class="modal-footer">    
+            <button th:if="${isFileExist}" class="btn btn-primary submit">Send</button>
+            <button class="btn modalclose" data-dismiss="modal">Close</button>
+        </div>
+    </form>
+</div>
+<script type="text/javascript">	var modalparent = $('div#modalcontainer');
+	bookingmodalbits(modalparent);
+	if ($("#isFileExist").val() == "false") showError($("#filenotfoundmsg").val());
+	$("#quoteemailsendingform", modalparent).submit(function() {
+		if($(this).valid()){
+			var email = {
+				to: $("#to").val(),
+				cc: $("#cc").val(),
+				bcc: $("#bcc").val(),
+				subject: $("#subject").val(),
+				body: $(".wysihtml5-sandbox").contents().find("body").html()
+			};
+			var i = 0;
+			$('table[role="presentation"] tr.in').each(function(){ 
+				email["files[" + i + "]"] = $("td p.name b", this).text();
+				i++;
+			});
+			if($("a#preparedquote").length > 0) {
+				email["files[" + i + "]"] = $("a#preparedquote").data("path");
+			}
+			$.wrapPost($("button.submit", this), "modal", $(this).attr('action'), email, function(data) {
+				if($.trim(data) != "") {
+					$('#emailstable > tbody').prepend(data);
+					$('#emailstable > tbody > tr:first td').effect("highlight", {}, 1500);
+					if($('#emailstable > tbody > tr:first').children(".docmail").val() == "true") {
+						documentsSectionReload();
+					}
+					$('button.modalclose').trigger('click');
+					showSuccess("Email sent successfully");
+				} else {
+					showError("Failed to send email.");
+				}
+			});
+		} else {
+			showInfo("Please fill required fields");
+		}
+		return false;				
+	});
+	
+	$("select#emailtemplate", modalparent).on("change", function(){
+		if($(this).val() === "") {
+			$(".wysihtml5-sandbox").contents().find("body").html("");
+		} else {
+			$.get($(this).attr("data-remote"), "template=" + $(this).val(), function(response){
+				$(".wysihtml5-sandbox").contents().find("body").html(response);
+			});
+		}
+	});
+	
+	$("a#removeattachedquote", modalparent).on("click", function(){
+		$("div#quotediv").remove();
+		$("button#viewquotebtn", modalparent).remove();
+		return false;
+	});
+	
+	$("button#viewquotebtn", modalparent).click(function(){
+		window.open($("a#preparedquote", modalparent).attr('href'));
+		return false;
+	});
+	$('button.modalclose', modalparent).off('click');
+	$('button.modalclose', modalparent).on('click', function() {
+		mainFormReload();
+		modalparent.modal('hide');
+	});
+</script>

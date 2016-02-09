@@ -1,0 +1,191 @@
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+	<title>Email Compose</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="description" content="" />
+	<meta name="author" content="" />
+	
+	<link rel="stylesheet" type="text/css" th:href="${meta_ui_css}" />
+	
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery-ui.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/bootstrap.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/wysihtml5.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/bootstrap-datepicker.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery.validate.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/moment.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery.multiselect.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery.multiselect.filter.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery.scrollTo.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/jquery.dataTables.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/bootstrap-wysihtml5.min.js'"></script>
+	<script type="text/javascript" th:src="${meta_ui_js} + '/file-uploader.min.js'"></script>
+	
+	<script type="text/javascript" th:if="${not#lists.isEmpty(custom_js)}" th:each="js : ${custom_js}" th:src="@{${js}}"></script>
+	
+	<script type="text/javascript" th:src="${meta_ui_js} + '/metafour-ui.js'"></script>
+
+</head>
+
+
+<body data-spy="scroll">
+	<!-- header bar -->
+	<div id="headerbar" class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container">
+				<button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<span class="brand">Compose email</span>
+				<div class="nav-collapse collapse">
+					<p class="navbar-text span3" th:text="${''}">Feedback message</p>
+					<ul class="nav pull-right">
+						<li><a class="submit" id="headerconfirmbutton">Send Email</a></li>
+						<li class="divider-vertical"></li>
+						<li class="dropdown">
+							<a class="dropdown-toggle" data-toggle="dropdown" href="#"> Actions <b class="caret"></b></a>
+							<ul class="dropdown-menu">
+								<li><a id="supcat" class="print" data-toggle="modal">Print</a></li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<div class="container mainbody" id="container">
+
+		<form method="post" id="emailform" class="form-horizontal otherbodyform" th:action="@{${formSubmitURL}}" enctype="multipart/form-data">
+			<input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+			<section id="email-section">
+				<div class="row anything">
+					<div class="span10">
+						<fieldset>
+							<div class="control-group">
+								<label for="from" class="control-label">From</label>
+								<div class="controls ">
+									<input type="text" class="input-xxlarge include required" id="from" name="from" th:value="${from}"
+										data-required="required" data-valid="email" />
+								</div>
+							</div>
+							<div class="control-group" th:if="${replyTo ne null}">
+								<label for="replyTo" class="control-label">Reply to</label>
+								<div class="controls ">
+									<input type="text" class="input-xxlarge include required" id="replyTo" name="replyTo" th:value="${replyTo}"
+										data-required="required" data-valid="email" />
+								</div>
+							</div>
+							<div class="control-group">
+								<label for="to" class="control-label">To</label>
+								<div class="controls">
+									<input type="text" id="to" name="to" class="include input-xxlarge required" th:value="${to}" 
+										data-required="required" />
+								</div>
+							</div>
+							<div class="control-group">
+								<label for="cc" class="control-label">Cc</label>
+								<div class="controls ">
+									<input type="text" class="input-xxlarge include" id="cc" name="cc" th:value="${cc}" data-valid="email"/>
+								</div>
+							</div>
+							<div class="control-group">
+								<label for="bcc" class="control-label">Bcc</label>
+								<div class="controls">
+									<input type="text" class="input-xxlarge include" id="bcc" name="bcc" th:value="${bcc}" data-valid="email"/>
+								</div>
+							</div>
+							<div class="control-group">
+								<label for="subject" class="control-label">Subject</label>
+								<div class="controls">
+									<input type="text" id="subject" name="subject" class="input-xxlarge include required" th:value="${subject}"
+										data-required="required" data-valid="text"/>
+								</div>
+							</div>
+
+						</fieldset>
+					</div>
+
+					<div class="span6 row-fluid" th:if="${not#maps.isEmpty(availableFiles)}">
+						<fieldset>
+							<div class="control-group">
+								<label class="control-label">Available documents</label>
+								<div class="controls">
+									<label class="checkbox" th:each="doc : ${availableFiles}">
+										<input type="checkbox" class="include checkboxcontrolled"
+										th:id="'document_' + ${doc.key}" th:text="${doc.value[0]}"
+										th:attr="data-filepath=${doc.value[1]}, data-filename=${doc.value[0]}" />
+									</label>
+								</div>
+							</div>
+						</fieldset>
+					</div>	
+
+					<div class="span10 row-fluid" th:if="${not#maps.isEmpty(availableFiles)}">
+						<fieldset>
+							<div class="control-group attached-docs nodisplay">
+								<label class="control-label">Attached documents</label>
+								<div class="controls alert-info">
+									<span class="nodisplay" th:each="doc : ${availableFiles}"
+										th:classappend="'document_' + ${doc.key}"> <b><span
+											th:text="${doc.value[0] + ', '}"></span></b>
+									</span>
+								</div>
+							</div>
+						</fieldset>
+					</div>
+
+					<div class="span10">
+						<fieldset>
+							<div class="control-group">
+								<div class="controls ">
+									<textarea id="email-details" name="email-details" class="rte" th:text="${body}"></textarea>
+								</div>
+							</div>
+						</fieldset>
+					</div>
+				</div>
+			</section>
+		</form>
+
+		<div class="control-group">
+			<div class="pull-right">
+				<button class="btn include btn-success submit" type="button"
+					id="sendemailbtn">Send Mail</button>
+			</div>
+		</div>
+
+	</div>
+
+</body>
+
+<script type="text/javascript">
+	(window.jQuery);
+	$(document).ready(function() {
+		$('.submit').off('click');
+		$('.submit').on('click', function(){
+			$("#emailform").submit();
+		});
+		
+// 		var target = $("div.fileupload-buttonbar");
+// 		$('.fileupload').fileupload('enable');
+// 		$('.fileupload-buttonbar').each(function() {
+// 			$(this).fileupload({
+// 				dropZone: $(this),
+// 				autoUpload: false,
+// 				sequentialUploads: true,
+// 				presentation: true
+// 			});
+// 		});
+
+	});
+	
+</script>
+
+</html>
+

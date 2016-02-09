@@ -1,0 +1,32 @@
+netc-api-test-context.xml
+
+*.properties
+!*-sample.properties
+
+*.jpage
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# Build tool
+bin/
+/dist/
+# https://github.com/github/gitignore/blob/master/Maven.gitignore
+build/
+log/
+/target/
+# https://github.com/github/gitignore/blob/master/Gradle.gitignore
+/gradle/
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# Eclipse
+/.classpath
+/.project
+/.settings/
+/.springBeans
+/.idea/
+*.iml
+*.iws
