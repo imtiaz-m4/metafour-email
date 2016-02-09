@@ -63,10 +63,8 @@ public class EmailProcessController {
 
 		// load submit url
 		wctx.setVariable("formSubmitURL", StringsM4.isBlank(data.getFormSubmitURL()) ? "/emailprocess/sendmail" : data.getFormSubmitURL());
-
 		// available docs
 		wctx.setVariable("availableFiles", emailProcessor.getAvailableFilesToAttach(data.getReferenceId()));
-
 		// pre-attached files
 		wctx.setVariable("attachedFiles", emailProcessor.getAttachments());
 
