@@ -15,7 +15,7 @@ public interface EmailProcessor {
 
 	public List<String> getAttachments();
 	
-	public String processEmailContentTemplate();
+	public String processEmailContentTemplate(Map<String, String[]> params);
 	
 	public Map<String, String[]> getAvailableFilesToAttach(String referenceId);
 	

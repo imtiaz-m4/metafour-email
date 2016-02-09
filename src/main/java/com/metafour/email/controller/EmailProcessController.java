@@ -1,10 +1,8 @@
 package com.metafour.email.controller;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -13,11 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -70,8 +64,7 @@ public class EmailProcessController {
 		wctx.setVariable("bcc", getFilteredValue(templData.getBcc()));
 		wctx.setVariable("replyTo", getFilteredValue(templData.getReplyTo()));
 		wctx.setVariable("subject", getFilteredValue(templData.getSubject()));
-		wctx.setVariable("body", getFilteredValue(templData.getBody()));
-
+	
 		// load submit url
 		wctx.setVariable("formSubmitURL", StringsM4.isBlank(templData.getFormSubmitURL()) ? "/emailprocess/sendmail" : templData.getFormSubmitURL());
 
@@ -80,6 +73,10 @@ public class EmailProcessController {
 
 		// pre-attached files
 		wctx.setVariable("attachedFiles", emailProcessor.getAttachments());
+		
+		// process email template 
+		String message = emailProcessor.processEmailContentTemplate(request.getParameterMap());
+		wctx.setVariable("body", StringsM4.isNotBlank(message) ? message : getFilteredValue(templData.getBody()));
 
 		return getTemplateEngine().process("email.html", wctx);
 	}
@@ -91,6 +88,7 @@ public class EmailProcessController {
 		
 		if (StringsM4.isBlank(email.getFrom())) {
 			addError("Sender email is missing", oMap);
+			return oMap;
 		} else {
 			if (email.getFrom().indexOf(',') != -1) {
 				addError("Multiple sender email is not allowed", oMap);
@@ -98,19 +96,11 @@ public class EmailProcessController {
 			}
 		}
 		
-		if (StringsM4.isBlank(email.getTo())) {
-			addError("Recipient email is missing", oMap);
-		}
-		if (StringsM4.isBlank(email.getSubject())) {
-			addError("Email subject is missing", oMap);
-		}
-		if (StringsM4.isBlank(email.getBody())) {
-			addError("Email details is missing", oMap);
-		}
+		if (StringsM4.isBlank(email.getTo())) addError("Recipient email is missing", oMap);
+		if (StringsM4.isBlank(email.getBody())) addError("Email details is missing", oMap);
+		if (StringsM4.isBlank(email.getSubject())) addError("Email subject is missing", oMap);
 
-		oMap = emailProcessor.sendEmail(email, webRequest);
-
-		return oMap;
+		return emailProcessor.sendEmail(email, webRequest);
 	}
 
 	/*
