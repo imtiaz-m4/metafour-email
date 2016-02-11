@@ -1,10 +1,8 @@
 package com.metafour.email.controller;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -13,18 +11,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.WebRequest;
+import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
-import org.thymeleaf.spring3.SpringTemplateEngine;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.TemplateResolver;
 
@@ -38,16 +32,11 @@ import com.metafour.util.StringsM4;
 public class EmailProcessController {
 	private static final Logger logger = LoggerFactory.getLogger(EmailProcessController.class);
 
-	@Autowired 
+	@Autowired
 	private EmailProcessor emailProcessor;
 
 	@Autowired
 	private ServletContext servletContext;
-
-	public EmailProcessController() {
-		super();
-	}
-
 
 	@RequestMapping(method = RequestMethod.GET, value = "/compose")
 	@ResponseBody
@@ -56,27 +45,27 @@ public class EmailProcessController {
 
 		final WebContext wctx = new WebContext(request, response, servletContext);
 
-		EmailTemplateData templData = emailProcessor.getEmailTemplateData(request.getParameterMap());
+		EmailTemplateData data = emailProcessor.getEmailTemplateData(request.getParameterMap());
 
 		// load js files
-		wctx.setVariable("custom_js", templData.getCustomJavascripts());
-		wctx.setVariable("meta_ui_js", templData.getCdnPath() + "/js");
-		wctx.setVariable("meta_ui_css", templData.getCdnPath() + "/css/metafour-ui.css");
+		wctx.setVariable("custom_js", data.getCustomJavascripts());
+		wctx.setVariable("meta_ui_js", data.getCdnPath() + "/js");
+		wctx.setVariable("meta_ui_css", data.getCdnPath() + "/css/metafour-ui.css");
 
 		// load email data
-		wctx.setVariable("from", getFilteredValue(templData.getFrom()));
-		wctx.setVariable("to", getFilteredValue(templData.getTo()));
-		wctx.setVariable("cc", getFilteredValue(templData.getCc()));
-		wctx.setVariable("bcc", getFilteredValue(templData.getBcc()));
-		wctx.setVariable("replyTo", getFilteredValue(templData.getReplyTo()));
-		wctx.setVariable("subject", getFilteredValue(templData.getSubject()));
-		wctx.setVariable("body", getFilteredValue(templData.getBody()));
+		wctx.setVariable("from", getFilteredValue(data.getFrom()));
+		wctx.setVariable("to", getFilteredValue(data.getTo()));
+		wctx.setVariable("cc", getFilteredValue(data.getCc()));
+		wctx.setVariable("bcc", getFilteredValue(data.getBcc()));
+		wctx.setVariable("replyTo", getFilteredValue(data.getReplyTo()));
+		wctx.setVariable("subject", getFilteredValue(data.getSubject()));
+		wctx.setVariable("body", getFilteredValue(data.getBody()));
 
 		// load submit url
-		wctx.setVariable("formSubmitURL", StringsM4.isBlank(templData.getFormSubmitURL()) ? "/emailprocess/sendmail" : templData.getFormSubmitURL());
+		wctx.setVariable("formSubmitURL", StringsM4.isBlank(data.getFormSubmitURL()) ? "/emailprocess/sendmail" : data.getFormSubmitURL());
 
 		// available docs
-		wctx.setVariable("availableFiles", emailProcessor.getAvailableFilesToAttach(templData.getReferenceId()));
+		wctx.setVariable("availableFiles", emailProcessor.getAvailableFilesToAttach(data.getReferenceId()));
 
 		// pre-attached files
 		wctx.setVariable("attachedFiles", emailProcessor.getAttachments());
@@ -84,11 +73,9 @@ public class EmailProcessController {
 		return getTemplateEngine().process("email.html", wctx);
 	}
 
-
 	@RequestMapping(value = "/sendmail", method = RequestMethod.POST)
 	public @ResponseBody Map<String, ?> sendEmail(@ModelAttribute Email email, WebRequest webRequest, final Locale locale) {
 		Map<String, String> oMap = new LinkedHashMap<String, String>();
-		
 		if (StringsM4.isBlank(email.getFrom())) {
 			addError("Sender email is missing", oMap);
 		} else {
@@ -97,47 +84,31 @@ public class EmailProcessController {
 				return oMap;
 			}
 		}
-		
-		if (StringsM4.isBlank(email.getTo())) {
-			addError("Recipient email is missing", oMap);
-		}
-		if (StringsM4.isBlank(email.getSubject())) {
-			addError("Email subject is missing", oMap);
-		}
-		if (StringsM4.isBlank(email.getBody())) {
-			addError("Email details is missing", oMap);
-		}
+		if (StringsM4.isBlank(email.getTo())) addError("Recipient email is missing", oMap);
+		if (StringsM4.isBlank(email.getSubject())) addError("Email subject is missing", oMap);
+		if (StringsM4.isBlank(email.getBody())) addError("Email details is missing", oMap);
 
 		oMap = emailProcessor.sendEmail(email, webRequest);
-
 		return oMap;
 	}
 
-	/*
-	 * Add response error
-	 */
 	private void addError(String message, Map<String, String> oMap) {
 		oMap.put("status", "error");
 		oMap.put("message", message);
 	}
 
-	/*
-	 * Process template
-	 */
-	private SpringTemplateEngine getTemplateEngine() {
+	private TemplateEngine getTemplateEngine() {
 		TemplateResolver tmplResolver = new ClassLoaderTemplateResolver();
 		tmplResolver.setTemplateMode("HTML5");
 		tmplResolver.setCharacterEncoding("UTF-8");
 		tmplResolver.setCacheable(false);
 
-		SpringTemplateEngine templateEngine = new SpringTemplateEngine();
+		TemplateEngine templateEngine = new TemplateEngine();
 		templateEngine.addTemplateResolver(tmplResolver);
-
 		return templateEngine;
 	}
-	
 
-	private String getFilteredValue(String val){
+	private String getFilteredValue(String val) {
 		return StringsM4.isNotBlank(val) ? val : "";
 	}
 
