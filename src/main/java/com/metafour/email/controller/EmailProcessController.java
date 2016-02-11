@@ -67,6 +67,10 @@ public class EmailProcessController {
 		wctx.setVariable("availableFiles", emailProcessor.getAvailableFilesToAttach(data.getReferenceId()));
 		// pre-attached files
 		wctx.setVariable("attachedFiles", emailProcessor.getAttachments());
+		
+		// process email template 
+		String message = emailProcessor.processEmailContentTemplate(request.getParameterMap());
+		wctx.setVariable("body", StringsM4.isNotBlank(message) ? message : getFilteredValue(data.getBody()));
 
 		return getTemplateEngine().process("email.html", wctx);
 	}
@@ -76,6 +80,7 @@ public class EmailProcessController {
 		Map<String, String> oMap = new LinkedHashMap<String, String>();
 		if (StringsM4.isBlank(email.getFrom())) {
 			addError("Sender email is missing", oMap);
+			return oMap;
 		} else {
 			if (email.getFrom().indexOf(',') != -1) {
 				addError("Multiple sender email is not allowed", oMap);
