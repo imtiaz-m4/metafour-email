@@ -1,0 +1,7 @@
+[12-Feb-2016]
+* [IR] Fixed EmailProcessor interface methods issue created during merge
+
+[11-Feb-2016]
+* [IR] metafour-email-0.1.0-SNAPSHOT
+* [IR] POM cleaned up and adapted for netcourier-parent and Spring 4.x
+* [IR] Thymeleaf TemplateEngine constructed instead of SpringTemplateEngine
